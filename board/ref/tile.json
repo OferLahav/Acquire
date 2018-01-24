@@ -1,0 +1,6 @@
+{
+    x: int,
+    y: int,
+    filled: <boolean>,
+    company: <company>
+}

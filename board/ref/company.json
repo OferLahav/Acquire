@@ -1,0 +1,6 @@
+{
+    name: <string>,
+    remaining: <int>, //available stocks
+    cap: <enum>,   //small, medium, large
+    size: <int>
+}

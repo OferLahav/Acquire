@@ -1,0 +1,152 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Games and stuff</title>
+    <style>
+        * {
+            background: #000;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            color:#FFF;
+        }
+
+        body {
+            font: 13px Helvetica, Arial;
+        }
+
+        form {
+            background: #000;
+            padding: 3px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        form input {
+            border: 0;
+            padding: 10px;
+            width: 90%;
+            margin-right: .5%;
+        }
+
+        form button {
+            width: 9%;
+            background: rgb(130, 224, 255);
+            border: none;
+            padding: 10px;
+        }
+        
+        button {
+            border: solid white 1px;
+        }
+
+        #userStats td, #stockPurchase td {
+            min-width: 100px;
+        }
+
+        #messages {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #messages li {
+            padding: 5px 10px;
+        }
+
+        #messages li:nth-child(odd) {
+            background: #eee;
+        }
+
+        .stockValueInput {
+            width: 20px;
+            border: solid white 1px;
+        }
+
+        .tiles {
+            min-width: 40px;
+            min-height: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loginform">
+        <ul id="messages"></ul>
+        <form action="" id="loginformID">
+            <input id="m" autocomplete="off" /><button>Send</button>
+        </form>
+    </div>
+    <div id="gameboard" style="display: none;">
+        <div id="userStats">
+            <table>
+                <tr>
+                    <td>Money</td>
+                    <td><span id="money"></span></td>
+                </tr>
+                <tr>
+                    <td>blue</td>
+                    <td><span id="blue_stock">0</span></td>
+                    <td><span id="blue_value">@0</span></td><td><input class="stockValueInput" value="0"/></td>
+                </tr>
+                <tr>
+                    <td>orange</td>
+                    <td><span id="orange_stock">0</span></td>
+                    <td><span id="orange_value">@0</span></td><td><input class="stockValueInput" value="0"/></td>
+                </tr>
+                <tr>
+                    <td>green</td>
+                    <td><span id="green_stock">0</span></td>
+                    <td><span id="green_value">@0</span></td><td><input class="stockValueInput" value="0"/></td>
+                </tr>
+                <tr>
+                    <td>yellow</td>
+                    <td><span id="yellow_stock">0</span></td>
+                    <td><span id="yellow_value">@0</span></td><td><input class="stockValueInput" value="0"/></td>
+                </tr>
+                <tr>
+                    <td>pink</td>
+                    <td><span id="pink_stock">0</span></td>
+                    <td><span id="pink_value">@0</span></td><td><input class="stockValueInput" value="0"/></td>
+                </tr>
+                <tr>
+                    <td>purple</td>
+                    <td><span id="purple_stock">0</span></td>
+                    <td><span id="purple_value">@0</span></td><td><input class="stockValueInput" value="0"/></td>
+                </tr>
+                <tr>
+                    <td>red</td>
+                    <td><span id="red_stock">0</span></td>
+                    <td><span id="red_value">@0</span></td><td><input class="stockValueInput" value="0"/></td>
+                </tr>
+            </table>
+            <div id="stockPurchase" style="display: none;">
+                    <!-- <form action="" id="stockPurchaseForm"></form> -->
+                        <div>Total: <span id="totalPurchase">0</span></div>
+                        <button id="stockPurchaseForm">Buy</button>
+                    <!-- </form> -->
+            </div>
+            </br>
+            </br>
+        </div>
+    </div>
+    <div id="corpSelectList" style="display: none;">
+        <li><button id="blue_l" class="corpSelect">Blue Large</button></li>
+        <li><button id="orange_l" class="corpSelect">Orange Large</button></li>
+        <li><button id="green_m" class="corpSelect">Green Medium</button></li>
+        <li><button id="yellow_m" class="corpSelect">Yellow Medium</button></li>
+        <li><button id="pink_m" class="corpSelect">Pink Medium</button></li>
+        <li><button id="purple_s" class="corpSelect">Purple Small</button></li>
+        <li><button id="red_s" class="corpSelect">Red Small</button></li>
+    </div>
+    </br>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="static/lib/jQuery.js"></script>
+    <script src="static/index.js"></script>
+</body>
+
+</html>
