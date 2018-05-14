@@ -224,8 +224,20 @@ $(function () {
 
     $('#loginformID').submit(function () {
         var value = $('#m').val();
-        if(value == 'login') {
-            $.get('/login').then(function (data) {
+        if (parseInt(value)) {
+            $.get('/newGame', { numOfPlayers: value }).then(function (data) {
+                $('#loginform').hide();
+                board = data.board;
+                user = data.user;
+                companies = data.companies;
+                $('#money').text(user.money);
+                setBoard(socket, data);
+            })
+        } else if (value === 'login') {
+            $.get('/login', { gameID: 0 }).then(function (data) {
+                if (!data) {
+                    alert("Too many active players in this game!")
+                }
                 $('#loginform').hide();
                 board = data.board;
                 user = data.user;
@@ -303,5 +315,24 @@ $(function () {
     });
 
     $('.corpSelect').on('click', createCompany)
+
+    $(document).on('ready', () => {
+        $.get('/getActiveGames', (games) => {
+            console.log(games)
+            var activeGames = $('#messages');
+            // activeGames.add('table');
+            // var table = document.createElement('table');
+            for (var i = 0; i < games.length; i++) {
+                var game = document.createElement('li');
+                // for (var j = 0 ; j < games.lengh; j++) {
+                    // var td = document.createElement('td');
+                game.innerHTML = '<button class="tasdf"> Game ' + games[i].id + '</button>';
+                //     row.appendChild(td);
+                // }
+                $(activeGames).append(game);
+            }
+            // board.append(table);
+        });
+    })
 
 });
