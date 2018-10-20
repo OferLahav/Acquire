@@ -1,0 +1,26 @@
+{
+  "name": "board",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OferLahav/Acquire.git"
+  },
+  "keywords": [
+    "taly-explore"
+  ],
+  "author": "taly",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/OferLahav/Acquire/issues"
+  },
+  "homepage": "https://github.com/OferLahav/Acquire#readme",
+  "dependencies": {
+    "express": "^4.16.3",
+    "socket.io": "^2.1.1"
+  }
+}

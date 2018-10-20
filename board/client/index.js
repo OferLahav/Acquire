@@ -1,6 +1,8 @@
+var gameID;
 var boardData;
 var neighbors = [];
 var thisTile = null;
+var updateTiles = [];
 var socket;
 var board;
 var companies;
@@ -13,200 +15,195 @@ var stockValues = {
 }
 
 function createTableDynamically () {
-    var board = $('#gameboard');
-    board.add('table');
+    var newBoard = $('#gameboard');
+    newBoard.add('table');
     var table = document.createElement('table');
     for (var i = 0; i < 10; i++) {
         var row = document.createElement('tr');
         for (var j = 0 ; j < 10; j++) {
             var td = document.createElement('td');
-            td.innerHTML = '<button class="tiles" id="' + i + '' + j +'"></button>';
+            td.innerHTML = '<button class="tiles" id="' + i + '_' + j +'"></button>';
             row.appendChild(td);
         }
         table.appendChild(row);
     }
-    board.append(table);
+    newBoard.append(table);
 
-    board.show();
+    newBoard.show();
 }
 
 function highlightUsertiles(user) {
     user.tiles.forEach(function (t) {
-        $('#' + t.x + '' + t.y).css('border', 'solid green 1px');
+        $('#' + t.x + '_' + t.y).css('border', 'solid green 1px');
+    });
+}
+
+function getNeighbors(tile){
+    var neighbors = [];
+
+    var northNeighbor = board[(tile.x - 1) + "_" + tile.y];
+    if (northNeighbor) neighbors.push(northNeighbor);
+    
+    var southNeigbor = board[(tile.x + 1) + "_" + tile.y];
+    if (southNeigbor) neighbors.push(southNeigbor);
+    
+    var eastNeighbor = board[tile.x + "_" + (tile.y + 1)];
+    if (eastNeighbor) neighbors.push(eastNeighbor);
+    
+    var westNeighbor = board[tile.x + "_" + (tile.y - 1)];
+    if (westNeighbor) neighbors.push(westNeighbor);
+
+    return neighbors;
+}
+
+function addTileToCorporation(tile, comp){
+    tile.company = comp;
+    companies[comp].size++;
+    updateTiles.push(tile);
+
+    var neighbors = getNeighbors(tile);
+    
+    neighbors.forEach(function(n){
+        if (n.filled && n.company !== comp){
+            addTileToCorporation(n, comp);
+        }
     });
 }
 
 function createCompany() {
     var colorNsize = this.id.split('_');
-
-    thisTile.company = colorNsize[0];
-    thisTile.size = colorNsize[1];
-
-    neighbors.forEach(function (n) {
-        n.company = colorNsize[0];
-        n.size = colorNsize[1];
-    })
+    addTileToCorporation(thisTile, colorNsize[0]);
+    console.log('COLORNSIZE: '+ this.id);
 
     $('#gameboard').show()
     $('#corpSelectList').hide()
 
-    
-    companies[colorNsize[0]].size = neighbors.length + 1;
+    // User gets initialize incorporation stock
     companies[colorNsize[0]].remaining--;
     user.stocks[colorNsize[0]] = 1;
+
     $('#' + colorNsize[0] + '_stock').text(
         parseInt($('#' + colorNsize[0] + '_stock').text()) + 1 );
     
-    neighbors.push(thisTile);
-    socket.emit('selectTile', { tiles: neighbors, board: board, companies: companies});
+    console.log('createCompany : ' + updateTiles.length);
+    socket.emit('selectTile', { tiles: updateTiles, board: board, companies: companies});
 
-    neighbors = [];
+    updateTiles = [];
+    updateTiles.foo = function(){};
+    updateTiles= {
+        0:'test'
+    }
     thisTile = null;
 }
 
-function setBoard(socket, data) {
+//function setBoard(socket, data) {
+function setBoard(socket) {
 
     var tileClick = function (event) {
- 
-        var targetId = event.currentTarget.id;
-        var found = false;
-        user.tiles.forEach(function (t){
-            var id = t.x + '' + t.y; 
-            if( id == targetId) {
-                found = true;
+        var tileId = event.currentTarget.id;
+        var tile = user.tiles.find(c => c.id === tileId);
+        
+        if(!tile) return console.log('Error finding id');
+        console.log('Curr tile: ' +tile.id);
+        // fill picked tile
+        var pickedTileOnBoard = board[tile.id];
+        if (!pickedTileOnBoard) return console.log('An error occured on board.');
+
+        pickedTileOnBoard.filled = true;
+        thisTile = tile;
+
+        // Get neighboring tiles and check their status
+        var incorporatedNeighborTiles = [];
+        var builtNeighborTiles = [];
+        var countEmptyNeighbors = 0;
+
+        var neighbors = getNeighbors(pickedTileOnBoard);
+
+        neighbors.forEach(function (n) {
+            if (n.company && !incorporatedNeighborTiles.find(c=>c.company === n.company)) {
+                incorporatedNeighborTiles.push(n);
+            } else if (n.filled){
+                builtNeighborTiles.push(n);
+            } else {
+                countEmptyNeighbors++;
             }
         });
+        
+        // Check neighbors' statuses and react accordingly
+        var clearVars = true;
 
-        if(!found) {
-            return;    
+        if (countEmptyNeighbors === neighbors.length){
+            // No built neighbors >> Do nothing
+            updateTiles.push(pickedTileOnBoard);
+            console.log('DO NOTHING');
+        } else if (incorporatedNeighborTiles.length === 1){
+            // Only one incorporated neighbor >> Add tile to corporation
+            console.log('ADD TILE TO CORP ' + incorporatedNeighborTiles[0].company);
+            addTileToCorporation(pickedTileOnBoard, incorporatedNeighborTiles[0].company);
+            
+        } else if (incorporatedNeighborTiles.length > 1){
+            // Two or more corporations are to be merged
+
+            // Find biggest corporation of the merged corps
+            var indexBiggestCorp = 0;
+            var sizeCheck = 0;
+            var biggestCorpName = '';
+
+            for (var i = 0; i < incorporatedNeighborTiles.length; i++) {
+                var corpName = incorporatedNeighborTiles[i].company;
+                var currCorpSize = companies[corpName].size;
+                if (currCorpSize > sizeCheck){
+                    indexBiggestCorp = i;
+                    biggestCorpName = corpName;
+                    sizeCheck = currCorpSize;
+                }
+            };
+
+            incorporatedNeighborTiles.splice(indexBiggestCorp,1);
+
+            incorporatedNeighborTiles.forEach(function(n){
+                // recursively add smaller corps tiles to biggest corporation
+                addTileToCorporation(n, biggestCorpName);
+                
+                // defunct smaller corps and handle shareholder bonuses
+
+                // handlestocks
+
+            });
+        } else if (builtNeighborTiles.length > 0){
+            console.log('INCORPORATE TILES');
+            // No incorporated neighbors, only built >> Incorporate new company
+            $('#gameboard').hide()
+            $('#corpSelectList').show()
+
+            clearVars = false;
+        }
+
+        if (clearVars){
+            console.log('clearVars : ' + updateTiles.length);
+            socket.emit('selectTile', { tiles: updateTiles, board: board, companies: companies});
+            updateTiles = [];
+            thisTile = null;
+
+            clearVars = true;
         }
         
-        // check for neighboring blocks
-        board.forEach((t) => {
-            var id = t.x + '' + t.y;            
-            if (id == targetId) {
-                t.filled = true;
-                thisTile = t;
-            }
-            if ( t.filled &&
-                ((t.x - 1) + '' + t.y == targetId ||
-                 (t.x + 1) + '' + t.y == targetId ||
-                 t.x + '' + (t.y - 1) == targetId ||
-                 t.x + '' + (t.y + 1) == targetId )
-            ) {
-                neighbors.push(t);
-            }
-        })
-        // merge multiple corporations
-        if ( neighbors.length > 1) {
-            // check for multiple corporations
-            let merge = false;
-            let comp = null;
-            for (var i = 1; i < neighbors.length; i++) {
-                if ( (neighbors[i].company !== neighbors[i-1].company) && neighbors[i].company !== null && neighbors[i-1].company !== null) {
-                    merge = true;
-                }
-                if (neighbors[i].company !== null ) {
-                    comp = neighbors[i].company;
-                }
-                if (neighbors[i-1].company !== null ) {
-                    comp = neighbors[i-1].company;
-                }
-
-            }
-            if (merge) {
-                // identify the merger and and the mergee
-                var largestComp;
-                var largestSize = -1;
-                neighbors.forEach(function (n) {
-                    if (n.company) {
-                        if (companies[n.company].size > largestSize) {
-                            largestSize = companies[n.company].size ;
-                            largestComp = n.company;
-                        }
-                    }
-                });
-
-                var otherCompanies = [];
-                neighbors.forEach(function (n) {
-                    if (n.company !== largestComp) {
-                        otherCompanies.push(n.company);
-                    }
-                });
-
-                otherCompanies.forEach(function (c) {
-                    companies[c].size = 0;
-                    board.forEach(function (t) {
-                        if (t.company === c) {
-                            t.company = largestComp;
-                            neighbors.push(t);
-                            companies[largestComp].size++;
-                        }
-                    })
-                });
-                thisTile.company = largestComp;
-                companies[largestComp].size++;
-                neighbors.push(thisTile);
-
-                socket.emit('selectTile', { tiles: neighbors, board: board, companies: companies});
-                neighbors = [];
-                thisTile = null;
-
-            } else if (comp) {
-                thisTile.company = comp;
-                companies[thisTile.company].size++;
-                neighbors.forEach(function (n) {
-                    if (n.company !== comp) {
-                        n.company = comp;
-                        companies[thisTile.company].size++;
-                    }
-                })
-
-                neighbors.push(thisTile);
-                socket.emit('selectTile', { tiles: neighbors, board: board, companies: companies});
-                neighbors = [];
-                thisTile = null;
-            } else {
-                // surrounded by not corporate tiles
-                $('#gameboard').hide()
-                $('#corpSelectList').show()
-            }
-        } else if (neighbors.length === 1) {
-            // check if corporation established
-            if (neighbors[0].company) {
-                // add to existing corporation
-                thisTile.company = neighbors[0].company;
-                companies[thisTile.company].size++;
-                neighbors.push(thisTile);
-                socket.emit('selectTile', { tiles: neighbors, board: board, companies: companies});
-                neighbors = [];
-                thisTile = null;
-            } else {
-                // create new corporation
-                $('#gameboard').hide()
-                $('#corpSelectList').show()
-            }
-
-        } else {
-            neighbors.push(thisTile);
-            socket.emit('selectTile', { tiles: neighbors, board: board, companies: companies});
-            neighbors = [];
-            thisTile = null;
-        }
-
-        $('#' + targetId).css('border', 'solid white 1px');
-
+        // This is stupid.
         $('#stockPurchase').show();
 
+        // Remove picked tile from user optional tiles
+        $('#' + tileId).css('border', 'solid white 1px');
+
         for( var i = 0; i < 6 ; i++){
-            if(user.tiles[i].x + '' + user.tiles[i].y === targetId ) {
+            if(user.tiles[i].id === tileId ) {
                 user.tiles.splice(i, 1);
                 break;
             }
         }
 
+        // Get new tile from unpicked tiles pile
         user.tiles.indexOf({})
-        $.get('/newTile').then(function (tile) {
+        $.get('/newTile', {gameID: gameID}).then(function (tile) {
             user.tiles.push(tile);
             highlightUsertiles(user);
         })
@@ -229,6 +226,7 @@ $(function () {
                 $('#loginform').hide();
                 board = data.board;
                 user = data.user;
+                gameID = data.id;
                 companies = data.companies;
                 $('#money').text(user.money);
                 setBoard(socket, data);
@@ -298,13 +296,17 @@ $(function () {
             }
         }
 
+        if (purchaseOrder.total > user.money){
+            $('#error_message').text('WRONG');
+        }
+
         $('#totalPurchase').text(purchaseOrder.total)
 
     })
 
     socket.on('updateTile', function (data) {
         data.tiles.forEach(function(tile){
-            $('#'+ tile.x + '' + tile.y).css('background', tile.company || 'white');
+            $('#'+ tile.id).css('background', tile.company || 'white');
         });
         board = data.board;
         companies = data.companies;

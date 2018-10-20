@@ -20,22 +20,23 @@ function pickTiles(numOfTiles, tiles) {
     }
     return selectedTiles;
 }
-
 module.exports = {
     createNewGame: (numOfPlayers) => {
         var board = [];
-        var tiles = [];
+        var unpickedTiles = [];
         var users = [];
 
+        // create board tiles and unpicked tiles (all)
         for (var i = 0; i < 10; i++) {
             for (var j = 0; j < 10; j++) {
-                board.push({
+                board[i+'_'+j] = {
                     x: i,
                     y: j,
                     filled: false,
                     company: null
-                })
-                tiles.push({             
+                }
+                unpickedTiles.push({             
+                    id: i + '_' + j,
                     x: i,
                     y: j,
                     filled: false,
@@ -49,7 +50,7 @@ module.exports = {
             users[i] = {
                 money: 5000,
                 stocks: {},
-                tiles: pickTiles(6, tiles)
+                tiles: pickTiles(6, unpickedTiles)
             }
         }
         var newGame = { 
@@ -57,6 +58,7 @@ module.exports = {
             numOfActivePlayers: 1, 
             users: users, 
             board: board, 
+            unpickedTiles: unpickedTiles,
             companies: companies,
             capacity: parseInt(numOfPlayers)
          };
@@ -75,5 +77,8 @@ module.exports = {
     },
     getActiveGames: () => {
         return activeGames
+    },
+    pickATile: (gameID) => {
+        return pickTiles(1, activeGames[gameID].unpickedTiles)[0];
     }
 };

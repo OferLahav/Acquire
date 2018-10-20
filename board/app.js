@@ -1,9 +1,9 @@
-var express = require('express');
-var gameController = require('./server/gameController');
+const express = require('express');
+const gameController = require('./server/gameController');
 
 const app = express();
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
 
 app.get('/', (req, res) =>
     res.sendFile(__dirname + '/client/index.html')
@@ -25,7 +25,7 @@ app.get('/getActiveGames', (req, res) => {
 });
 
 app.get('/newTile', (req, res) => {
-    res.send(pickTiles(1)[0])
+    res.send(gameController.pickATile(req.query.gameID))
 });
 
 app.use('/static', express.static('client'))
